@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orbit Arcade</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0d0d0b;
+        --paper: #f8f2e7;
+        --accent: #ff6b35;
+        --accent-2: #1da1f2;
+        --accent-3: #ffd166;
+        --glow: rgba(255, 107, 53, 0.35);
+        --panel: rgba(248, 242, 231, 0.72);
+        --panel-border: rgba(13, 13, 11, 0.2);
+        --bg-1: #ffe66d;
+        --bg-2: #ff7b9c;
+        --bg-3: #4d96ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+        background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.6), transparent 55%),
+          linear-gradient(135deg, var(--bg-1), var(--bg-2) 45%, var(--bg-3) 90%);
+        overflow: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+        mix-blend-mode: soft-light;
+        pointer-events: none;
+      }
+
+      .stage {
+        position: relative;
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        padding: 28px clamp(20px, 4vw, 60px) 34px;
+        gap: 18px;
+      }
+
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .title {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: "Bungee Shade", "Space Grotesk", sans-serif;
+        font-size: clamp(2.6rem, 4.2vw, 4.2rem);
+        letter-spacing: 1px;
+        color: var(--ink);
+        text-shadow: 0 12px 35px rgba(13, 13, 11, 0.18);
+      }
+
+      .subtitle {
+        font-weight: 600;
+        max-width: 460px;
+        line-height: 1.4;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        font-weight: 600;
+        box-shadow: 0 12px 30px rgba(13, 13, 11, 0.15);
+        backdrop-filter: blur(12px);
+      }
+
+      canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+
+      .controls {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        padding: 16px;
+        border-radius: 18px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        box-shadow: 0 24px 60px rgba(13, 13, 11, 0.18);
+        backdrop-filter: blur(18px);
+      }
+
+      .control {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 0.95rem;
+      }
+
+      .control label {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+      }
+
+      .control input[type="range"] {
+        width: 100%;
+        accent-color: var(--accent);
+      }
+
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 700;
+        font-family: "Space Grotesk", sans-serif;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 12px 25px var(--glow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button.secondary {
+        background: #111;
+        color: #fff;
+        box-shadow: 0 12px 25px rgba(17, 17, 17, 0.25);
+      }
+
+      button.ghost {
+        background: transparent;
+        border: 1px dashed rgba(13, 13, 11, 0.35);
+        color: var(--ink);
+        box-shadow: none;
+      }
+
+      button:hover {
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 18px 30px rgba(13, 13, 11, 0.2);
+      }
+
+      .panel-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.9rem;
+      }
+
+      .stats {
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+
+      .legend {
+        display: grid;
+        gap: 6px;
+        font-size: 0.85rem;
+      }
+
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent-2);
+        box-shadow: 0 0 12px rgba(29, 161, 242, 0.6);
+      }
+
+      .footer {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        font-size: 0.9rem;
+      }
+
+      .pill {
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(13, 13, 11, 0.15);
+        font-weight: 600;
+      }
+
+      .helper {
+        font-weight: 600;
+      }
+
+      .floating-card {
+        position: absolute;
+        right: clamp(20px, 5vw, 70px);
+        top: clamp(120px, 18vh, 210px);
+        z-index: 2;
+        padding: 16px 18px;
+        border-radius: 16px;
+        background: rgba(17, 17, 17, 0.9);
+        color: #fff;
+        width: min(280px, 80vw);
+        box-shadow: 0 24px 60px rgba(17, 17, 17, 0.35);
+        animation: float 5s ease-in-out infinite;
+      }
+
+      .floating-card strong {
+        display: block;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px) rotate(-1deg);
+        }
+        50% {
+          transform: translateY(-10px) rotate(1deg);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .floating-card {
+          position: static;
+          animation: none;
+          width: 100%;
+        }
+
+        .footer {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <canvas id="playground"></canvas>
+      <header>
+        <div class="title">
+          <h1>Orbit Arcade</h1>
+          <div class="subtitle">
+            Tap, drag, and remix a living galaxy. Every click spawns a burst, every drag bends the flow.
+          </div>
+        </div>
+        <div class="badge">
+          <span>🪐</span>
+          <span>Interactive GitHub Page</span>
+        </div>
+      </header>
+
+      <div class="floating-card">
+        <strong>Cosmic Moves</strong>
+        <div class="legend">
+          <span><span class="dot"></span>Click: drop a burst</span>
+          <span><span class="dot"></span>Drag: bend the orbit</span>
+          <span><span class="dot"></span>Press P: party palette</span>
+        </div>
+      </div>
+
+      <div></div>
+
+      <section class="controls">
+        <div class="control">
+          <label for="gravity">Gravity</label>
+          <input id="gravity" type="range" min="0" max="1.5" step="0.05" value="0.6" />
+        </div>
+        <div class="control">
+          <label for="speed">Velocity</label>
+          <input id="speed" type="range" min="0.3" max="2" step="0.05" value="1" />
+        </div>
+        <div class="control">
+          <label for="trail">Trail</label>
+          <input id="trail" type="range" min="0" max="0.25" step="0.01" value="0.08" />
+        </div>
+        <div class="control panel-info">
+          <label>Energy</label>
+          <div class="stats"><span id="energy">0</span> ⚡</div>
+          <div class="helper">Particles: <span id="count">0</span></div>
+        </div>
+        <div class="control buttons">
+          <button id="burst">Burst</button>
+          <button id="shuffle" class="secondary">Shuffle</button>
+          <button id="clear" class="ghost">Reset</button>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="pill">Built for GitHub Pages · 60 FPS dream</div>
+        <div class="helper">Tip: slow gravity + high trails = neon jelly.</div>
+      </footer>
+    </div>
+
+    <script>
+      const canvas = document.getElementById("playground");
+      const ctx = canvas.getContext("2d");
+      const gravityInput = document.getElementById("gravity");
+      const speedInput = document.getElementById("speed");
+      const trailInput = document.getElementById("trail");
+      const energyEl = document.getElementById("energy");
+      const countEl = document.getElementById("count");
+      const burstBtn = document.getElementById("burst");
+      const shuffleBtn = document.getElementById("shuffle");
+      const clearBtn = document.getElementById("clear");
+
+      const palettes = [
+        {
+          bg: ["#ffe66d", "#ff7b9c", "#4d96ff"],
+          accents: ["#ff6b35", "#1da1f2", "#ffd166"],
+        },
+        {
+          bg: ["#ffbe0b", "#fb5607", "#3a86ff"],
+          accents: ["#8338ec", "#ff006e", "#ffbe0b"],
+        },
+        {
+          bg: ["#fef9ef", "#f26a8d", "#0f7173"],
+          accents: ["#3f7cac", "#f7b801", "#f45b69"],
+        },
+        {
+          bg: ["#1b998b", "#f6ae2d", "#f26419"],
+          accents: ["#2d3047", "#f6ae2d", "#1b998b"],
+        },
+      ];
+      let paletteIndex = 0;
+
+      const pointer = { x: 0, y: 0, active: false, down: false };
+      let width = 0;
+      let height = 0;
+      let particles = [];
+      let party = false;
+
+      const resize = () => {
+        const dpr = window.devicePixelRatio || 1;
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      };
+
+      const rand = (min, max) => Math.random() * (max - min) + min;
+
+      const seedParticles = (count = 80) => {
+        particles = Array.from({ length: count }, () => createParticle());
+      };
+
+      const createParticle = (x = rand(0, width), y = rand(0, height)) => {
+        const palette = palettes[paletteIndex].accents;
+        return {
+          x,
+          y,
+          vx: rand(-1, 1),
+          vy: rand(-1, 1),
+          r: rand(2, 6),
+          hue: palette[Math.floor(rand(0, palette.length))],
+        };
+      };
+
+      const applyPalette = (index) => {
+        const palette = palettes[index];
+        const root = document.documentElement.style;
+        root.setProperty("--bg-1", palette.bg[0]);
+        root.setProperty("--bg-2", palette.bg[1]);
+        root.setProperty("--bg-3", palette.bg[2]);
+        root.setProperty("--accent", palette.accents[0]);
+        root.setProperty("--accent-2", palette.accents[1]);
+        root.setProperty("--accent-3", palette.accents[2]);
+        root.setProperty("--glow", `${palette.accents[0]}66`);
+        particles.forEach((p) => {
+          p.hue = palette.accents[Math.floor(rand(0, palette.accents.length))];
+        });
+      };
+
+      const burst = (x, y, count = 24) => {
+        for (let i = 0; i < count; i += 1) {
+          const angle = rand(0, Math.PI * 2);
+          const speed = rand(0.5, 3.2);
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            r: rand(2, 6),
+            hue: palettes[paletteIndex].accents[Math.floor(rand(0, 3))],
+          });
+        }
+      };
+
+      const update = () => {
+        const gravity = parseFloat(gravityInput.value);
+        const speed = parseFloat(speedInput.value);
+        const trail = parseFloat(trailInput.value);
+
+        ctx.fillStyle = `rgba(13, 13, 11, ${trail})`;
+        ctx.fillRect(0, 0, width, height);
+
+        let energy = 0;
+
+        particles.forEach((p) => {
+          if (pointer.active) {
+            const dx = pointer.x - p.x;
+            const dy = pointer.y - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            if (pointer.down) {
+              p.vx += (dx / dist) * gravity * 0.4;
+              p.vy += (dy / dist) * gravity * 0.4;
+            }
+          }
+
+          p.vx += Math.sin(p.y * 0.002) * gravity * 0.02;
+          p.vy += Math.cos(p.x * 0.002) * gravity * 0.02;
+
+          p.x += p.vx * speed;
+          p.y += p.vy * speed;
+
+          if (p.x < -40) p.x = width + 40;
+          if (p.x > width + 40) p.x = -40;
+          if (p.y < -40) p.y = height + 40;
+          if (p.y > height + 40) p.y = -40;
+
+          energy += Math.abs(p.vx) + Math.abs(p.vy);
+
+          ctx.beginPath();
+          ctx.fillStyle = p.hue;
+          ctx.shadowColor = p.hue;
+          ctx.shadowBlur = 12;
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        energyEl.textContent = Math.round(energy);
+        countEl.textContent = particles.length;
+
+        requestAnimationFrame(update);
+      };
+
+      const handlePointerMove = (event) => {
+        pointer.active = true;
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+      };
+
+      const handlePointerDown = (event) => {
+        pointer.down = true;
+        burst(event.clientX, event.clientY, 18);
+      };
+
+      const handlePointerUp = () => {
+        pointer.down = false;
+      };
+
+      burstBtn.addEventListener("click", () => burst(width * 0.5, height * 0.5, 40));
+      shuffleBtn.addEventListener("click", () => {
+        paletteIndex = (paletteIndex + 1) % palettes.length;
+        applyPalette(paletteIndex);
+      });
+      clearBtn.addEventListener("click", () => {
+        seedParticles(80);
+      });
+
+      window.addEventListener("resize", resize);
+      window.addEventListener("mousemove", handlePointerMove);
+      window.addEventListener("pointerdown", handlePointerDown);
+      window.addEventListener("pointerup", handlePointerUp);
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key.toLowerCase() === "p") {
+          party = !party;
+          if (party) {
+            paletteIndex = (paletteIndex + 1) % palettes.length;
+            applyPalette(paletteIndex);
+            burst(width * 0.5, height * 0.5, 60);
+          }
+        }
+      });
+
+      resize();
+      seedParticles();
+      applyPalette(paletteIndex);
+      update();
+    </script>
+  </body>
+</html>
